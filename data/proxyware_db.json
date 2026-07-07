@@ -1,0 +1,26 @@
+{
+  "_comment": "Base de datos editable de proxyware/botnet residencial. OptiShield.py trae una copia interna; este archivo permite ampliarla sin recompilar. Formato: id -> {name, risk (low|medium|high), proc[], svc[], paths[], reg[], domains[]}.",
+  "_version": "1.0.0",
+  "signatures": {
+    "honeygain": {"name": "Honeygain", "risk": "medium", "proc": ["honeygain.exe"], "svc": ["HoneygainService"], "paths": ["Honeygain"], "reg": ["Honeygain"], "domains": ["honeygain.com", "honeygain.io"]},
+    "iproyal_pawns": {"name": "IPRoyal Pawns", "risk": "medium", "proc": ["pawns.exe", "iproyal_pawns.exe", "pawns-cli.exe"], "svc": ["PawnsService"], "paths": ["Pawns", "IPRoyal"], "reg": ["Pawns", "IPRoyal"], "domains": ["pawns.app", "iproyal.com"]},
+    "earnapp": {"name": "EarnApp (Bright Data)", "risk": "medium", "proc": ["earnapp.exe"], "svc": ["EarnApp"], "paths": ["EarnApp", "BrightData"], "reg": ["EarnApp"], "domains": ["earnapp.com", "brightdata.com", "luminati.io"]},
+    "packetstream": {"name": "PacketStream", "risk": "medium", "proc": ["packetstream.exe", "psclient.exe"], "svc": ["PacketStream"], "paths": ["PacketStream"], "reg": ["PacketStream"], "domains": ["packetstream.io"]},
+    "peer2profit": {"name": "Peer2Profit", "risk": "medium", "proc": ["peer2profit.exe", "p2papp.exe"], "svc": [], "paths": ["Peer2Profit"], "reg": ["Peer2Profit"], "domains": ["peer2profit.com"]},
+    "traffmonetizer": {"name": "Traffmonetizer", "risk": "medium", "proc": ["Traffmonetizer.exe", "tm.exe"], "svc": [], "paths": ["Traffmonetizer"], "reg": ["Traffmonetizer"], "domains": ["traffmonetizer.com"]},
+    "repocket": {"name": "Repocket", "risk": "medium", "proc": ["repocket.exe", "rpnetwork.exe"], "svc": [], "paths": ["Repocket"], "reg": ["Repocket"], "domains": ["repocket.co"]},
+    "packetshare": {"name": "PacketShare", "risk": "medium", "proc": ["packetshare.exe"], "svc": [], "paths": ["PacketShare"], "reg": ["PacketShare"], "domains": ["packetshare.io"]},
+    "proxyrack": {"name": "Proxyrack / PeerConnect", "risk": "high", "proc": ["peerconnect.exe", "proxyrack.exe"], "svc": [], "paths": ["Proxyrack", "PeerConnect"], "reg": [], "domains": ["proxyrack.com"]},
+    "922proxy": {"name": "922 S5 / 922proxy", "risk": "high", "proc": ["922proxy.exe", "s5.exe", "ip2world.exe"], "svc": [], "paths": ["922proxy", "922 S5", "IP2World"], "reg": [], "domains": ["922proxy.com", "ip2world.com"]},
+    "infatica": {"name": "Infatica", "risk": "high", "proc": ["infatica.exe", "infatica-service.exe"], "svc": ["InfaticaService"], "paths": ["Infatica"], "reg": ["Infatica"], "domains": ["infatica.io"]},
+    "asocks": {"name": "Asocks", "risk": "high", "proc": ["asocks.exe"], "svc": [], "paths": ["Asocks"], "reg": [], "domains": ["asocks.com"]},
+    "mysterium": {"name": "Mysterium (nodo)", "risk": "medium", "proc": ["myst.exe", "mysterium.exe", "mystnodeslauncher.exe"], "svc": ["MysteriumNode"], "paths": ["Mysterium"], "reg": [], "domains": ["mysterium.network"]},
+    "smartproxy": {"name": "Smartproxy SDK", "risk": "high", "proc": ["smartproxy.exe"], "svc": [], "paths": ["Smartproxy"], "reg": [], "domains": ["smartproxy.com"]},
+    "oxylabs": {"name": "Oxylabs SDK", "risk": "high", "proc": [], "svc": [], "paths": ["Oxylabs"], "reg": ["Oxylabs"], "domains": ["oxylabs.io"]},
+    "proxycheap": {"name": "Proxy-Cheap SDK", "risk": "high", "proc": [], "svc": [], "paths": ["ProxyCheap"], "reg": [], "domains": ["proxy-cheap.com"]},
+    "grasshopper": {"name": "Grasshopper SDK", "risk": "high", "proc": [], "svc": [], "paths": ["Grasshopper"], "reg": [], "domains": []},
+    "hola": {"name": "Hola VPN (nodo de salida)", "risk": "high", "proc": ["hola.exe", "hola_svc.exe", "hola_updater.exe"], "svc": ["hola_svc", "hola_updater"], "paths": ["Hola", "hola"], "reg": ["Hola"], "domains": ["hola.org", "holavpn.net"]},
+    "netnut_sdk": {"name": "NetNut SDK (botnet)", "risk": "high", "proc": [], "svc": [], "paths": ["NetNut"], "reg": ["NetNut"], "domains": ["netnut.io", "netnut.net"]},
+    "freevpn_p2p": {"name": "VPN gratis tipo P2P (Betternet/TouchVPN/Psiphon)", "risk": "medium", "proc": ["betternet.exe", "touchvpn.exe", "psiphon.exe", "psiphon3.exe"], "svc": [], "paths": ["Betternet", "TouchVPN", "Psiphon"], "reg": [], "domains": []}
+  }
+}

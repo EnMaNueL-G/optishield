@@ -1,0 +1,36 @@
+========================================
+   OptiShield  ·  by OptiSuite
+   Escudo de privacidad y seguridad
+========================================
+
+COMO USARLO (facil):
+1) Doble clic en  OptiShield.exe
+2) Pulsa "Si" en el aviso de Windows (administrador) para poder aplicar cambios.
+   - Si pulsas "No", igual funciona pero solo en modo LECTURA (analiza pero no cambia).
+3) En la pestana "Panel" pulsa "Analizar todo".
+4) Revisa cada pestana. Marca lo que quieras y aplica. TODO es reversible.
+
+NO NECESITAS INSTALAR NADA. El .exe ya lo lleva todo dentro.
+
+QUE HACE:
+- Detecta y neutraliza proxyware / botnets (tipo NetNut, Badbox).
+- Blinda tu privacidad (telemetria, ubicacion, publicidad...).
+- Audita el arranque, la red y la integridad del sistema.
+- NUNCA toca Windows Defender, Firewall ni UAC (solo informa).
+- 100% local: no envia tus datos a ningun sitio.
+
+CARPETAS:
+- OptiShield.exe .......... el programa (esto es lo que abres)
+- data\proxyware_db.json .. lista de proxyware (puedes ampliarla sin recompilar)
+- fuente\ ................. codigo fuente (Python) por transparencia
+- LEEME.md ............... documentacion completa
+
+COPIAS DE SEGURIDAD Y REGISTROS:
+   C:\ProgramData\OptiShield\   (backups + logs; desde ahi puedes revertir)
+
+SOPORTE OptiSuite:
+   WhatsApp: +56 9 7832 7863
+   Email:    support@optisuite.app
+   Web:      optisuite.app
+
+OptiShield es GRATIS. Si te ayuda, compartelo.
