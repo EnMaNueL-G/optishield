@@ -7,7 +7,7 @@ Sin dependencias externas: solo Python estándar + tkinter + comandos de Windows
 import os, sys, json, subprocess, threading, ctypes, socket, datetime, webbrowser, tempfile, re
 
 APP = "OptiShield"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 BRAND = "OptiSuite"
 WHATSAPP = "+56 9 7832 7863"
 WA_URL = "https://wa.me/56978327863"
@@ -255,11 +255,137 @@ def scan_local_network():
         dev["open"] = openp; dev["risk"] = bool(openp)
     return devices
 
+# OUI (prefijo MAC) -> fabricante. Lista offline de los más comunes en casa (privado, sin consultar a terceros).
+OUI = {
+    "fc-fb-fb":"Cisco","00-1a-11":"Google","f4-f5-e8":"Google","d8-6c-63":"Google","1c-f2-9a":"Google",
+    "44-65-0d":"Amazon","fc-a1-83":"Amazon","68-37-e9":"Amazon","74-c2-46":"Amazon","0c-47-c9":"Amazon",
+    "ac-63-be":"Amazon (Fire TV)","f0-27-2d":"Amazon","cc-f7-35":"Samsung","5c-49-7d":"Samsung","8c-77-12":"Samsung",
+    "e8-50-8b":"Samsung","bc-14-85":"Samsung","78-bd-bc":"Samsung","fc-03-9f":"Samsung","00-1e-75":"LG",
+    "b8-1d-aa":"LG","2c-59-8a":"LG","10-68-3f":"LG","a8-16-b2":"LG","cc-2d-8c":"LG","70-91-8f":"Sony",
+    "fc-0f-e6":"Sony","24-21-ab":"Sony","54-42-49":"Sony","b4-52-7e":"Sony","d0-73-d5":"Xiaomi",
+    "64-b4-73":"Xiaomi","28-6c-07":"Xiaomi","f8-a4-5f":"Xiaomi","50-ec-50":"Xiaomi","ac-c1-ee":"Xiaomi",
+    "b0-be-76":"TP-Link","50-c7-bf":"TP-Link","a4-2b-b0":"TP-Link","c0-06-c3":"TP-Link","54-af-97":"TP-Link",
+    "dc-a6-32":"Raspberry Pi","b8-27-eb":"Raspberry Pi","e4-5f-01":"Raspberry Pi","24-0a-c4":"Espressif (ESP/IoT)",
+    "30-ae-a4":"Espressif (ESP/IoT)","a4-cf-12":"Espressif (ESP/IoT)","bc-dd-c2":"Espressif (ESP/IoT)",
+    "3c-84-6a":"TP-Link","d8-0d-17":"TP-Link","00-17-88":"Philips Hue","ec-b5-fa":"Philips Hue",
+    "b0-c5-54":"D-Link","1c-bd-b9":"D-Link","c8-3a-35":"Tenda","04-d3-b0":"Realme/Oppo","c4-9d-ed":"Microsoft",
+    "70-bb-e9":"Microsoft (Xbox)","98-5f-d3":"Microsoft (Xbox)","00-50-56":"VMware","08-00-27":"VirtualBox",
+}
+def mac_vendor(mac):
+    if not mac: return ""
+    pref = mac.lower().replace(":", "-")[:8]
+    return OUI.get(pref, "")
+
+def _my_subnet():
+    """Devuelve (base, mi_ip) p.ej. ('192.168.1.', '192.168.1.34'). Asume /24 (lo típico en casa)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]; s.close()
+        return ip.rsplit(".", 1)[0] + ".", ip
+    except Exception:
+        return None, None
+
+def _ping(ip):
+    out = run(["ping", "-n", "1", "-w", "400", ip])
+    return "TTL=" in out or "ttl=" in out
+
+def scan_local_network_deep(progress=None):
+    """Barrido ACTIVO de TU subred (/24): ping a .1-.254 + fabricante por MAC + puertos de depuración.
+    Solo tu propia red. Más completo que el ARP pero tarda más."""
+    base, myip = _my_subnet()
+    if not base: return []
+    alive = []; lock = threading.Lock()
+    def worker(n):
+        ip = "%s%d" % (base, n)
+        if _ping(ip):
+            with lock: alive.append(ip)
+    # barrido en tandas de 32 hilos
+    targets = list(range(1, 255))
+    for i in range(0, len(targets), 32):
+        ths = [threading.Thread(target=worker, args=(n,)) for n in targets[i:i+32]]
+        for t in ths: t.start()
+        for t in ths: t.join()
+        if progress: progress(min(i+32, 254), 254)
+    # MACs desde ARP (ya poblado por los pings)
+    arp = run(["arp", "-a"]); macs = {}
+    for line in arp.splitlines():
+        m = re.search(r"(\d+\.\d+\.\d+\.\d+)\s+([0-9a-fA-F-]{11,17})", line)
+        if m: macs[m.group(1)] = m.group(2)
+    devices = []
+    for ip in sorted(alive, key=lambda x: int(x.rsplit(".",1)[1])):
+        mac = macs.get(ip, "")
+        openp = [ "%d %s" % (p, l) for p, l in DEBUG_PORTS.items() if _port_open(ip, p) ]
+        devices.append({"ip": ip, "mac": mac, "vendor": mac_vendor(mac) or ("(este PC)" if ip == myip else "(desconocido)"),
+                        "open": openp, "risk": bool(openp)})
+    return devices
+
 def public_ip():
     try:
         import urllib.request
         return urllib.request.urlopen("https://api.ipify.org", timeout=6).read().decode().strip()
     except Exception: return None
+
+# ======================= MÓDULO ADB (limpiar TV / TV-box Android) =======================
+# Tiendas legítimas: si una app de terceros NO viene de aquí, es sideload (típico de Badbox).
+KNOWN_STORES = {"com.android.vending", "com.amazon.venezia", "com.sec.android.app.samsungapps",
+                "com.huawei.appmarket", "com.xiaomi.market", "com.google.android.packageinstaller"}
+# Firmas de nombre asociadas a adware/Badbox/proxyware en Android (heurístico, conservador).
+BADBOX_HINTS = ["triada", "rooter", "hnyp", "proxy", "adsdk", "hidden", "silent", "clicker",
+                "com.rock.", "gota", "ad.sdk", "peer", "residential"]
+def _find_adb():
+    """Localiza adb.exe: junto al exe (platform-tools), PATH, o rutas comunes."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    cands = [os.path.join(base, "platform-tools", "adb.exe"),
+             os.path.join(os.path.dirname(os.path.abspath(__file__)), "platform-tools", "adb.exe")]
+    w = run(["where", "adb"]).strip().splitlines()
+    if w: cands.append(w[0].strip())
+    for p in (os.environ.get("LOCALAPPDATA",""), os.environ.get("USERPROFILE","")):
+        if p: cands.append(os.path.join(p, "Android", "Sdk", "platform-tools", "adb.exe"))
+    for c in cands:
+        if c and os.path.isfile(c): return c
+    return None
+
+def adb_connect(adb, ip):
+    if ":" not in ip: ip = ip + ":5555"
+    return run([adb, "connect", ip])
+
+def adb_devices(adb):
+    out = run([adb, "devices"]); devs = []
+    for ln in out.splitlines()[1:]:
+        p = ln.split()
+        if len(p) >= 2 and p[1] == "device": devs.append(p[0])
+    return devs
+
+def adb_model(adb, serial):
+    return (run([adb, "-s", serial, "shell", "getprop", "ro.product.model"]).strip() + " / " +
+            run([adb, "-s", serial, "shell", "getprop", "ro.product.manufacturer"]).strip())
+
+def adb_list_packages(adb, serial):
+    """Apps de terceros con su instalador. Marca las sideload/sospechosas."""
+    out = run([adb, "-s", serial, "shell", "pm", "list", "packages", "-3", "-i"])
+    pkgs = []
+    for ln in out.splitlines():
+        ln = ln.strip()
+        if not ln.startswith("package:"): continue
+        m = re.match(r"package:(\S+)(?:\s+installer=(\S+))?", ln)
+        if not m: continue
+        pkg = m.group(1); inst = (m.group(2) or "").strip()
+        sideload = inst in ("", "null") or inst not in KNOWN_STORES
+        badhint = any(h in pkg.lower() for h in BADBOX_HINTS)
+        risk = "ALTO" if badhint else ("revisar" if sideload else "ok")
+        pkgs.append({"pkg": pkg, "installer": inst or "(ninguno/sideload)", "risk": risk, "flag": badhint or sideload})
+    return sorted(pkgs, key=lambda x: (x["risk"] != "ALTO", x["risk"] != "revisar", x["pkg"]))
+
+def adb_disable(adb, serial, pkg):
+    return run([adb, "-s", serial, "shell", "pm", "disable-user", "--user", "0", pkg])
+
+def adb_uninstall(adb, serial, pkg):
+    return run([adb, "-s", serial, "shell", "pm", "uninstall", "--user", "0", pkg])
+
+def adb_close_debug(adb, serial):
+    r1 = run([adb, "-s", serial, "shell", "settings", "put", "global", "adb_enabled", "0"])
+    r2 = run([adb, "-s", serial, "shell", "settings", "put", "global", "adb_wifi_enabled", "0"])
+    return (r1 + r2)
 
 def _reg_key_exists(hive, path):
     try:
@@ -291,6 +417,37 @@ def _is_socks5(port):
     except Exception:
         return False
 
+# Patrones de hosting/proxy en el nombre DNS inverso (delatan un nodo/proxy, no un servicio normal).
+PROXY_HOST_PATTERNS = ["proxy", "vpn", "socks", "residential", "netnut", "brightdata", "luminati",
+                       "oxylabs", "iproyal", "packetstream", "peer2profit", "honeygain", "smartproxy",
+                       "webshare", "shifter", "rayobyte", "asocks", "922"]
+# Organizaciones "buenas" muy comunes (para no alarmar): nube/CDN legítimos.
+KNOWN_ORGS = {"amazonaws": "Amazon AWS", "googleusercontent": "Google", "1e100": "Google",
+              "microsoft": "Microsoft", "azure": "Microsoft Azure", "akamai": "Akamai (CDN)",
+              "cloudflare": "Cloudflare", "fastly": "Fastly (CDN)", "facebook": "Meta",
+              "fbcdn": "Meta", "apple": "Apple", "icloud": "Apple", "cloudfront": "Amazon CloudFront",
+              "gvt1": "Google", "whatsapp": "WhatsApp", "netflix": "Netflix", "spotify": "Spotify"}
+_rdns_cache = {}
+def _ip_org(ip):
+    """Organización aproximada por DNS inverso (solo DNS, sin APIs externas). Devuelve (org, host, es_proxy)."""
+    if ip in _rdns_cache: return _rdns_cache[ip]
+    host = ""
+    try:
+        socket.setdefaulttimeout(1.0)
+        host = socket.gethostbyaddr(ip)[0].lower()
+    except Exception: host = ""
+    org = ""
+    low = host
+    for key, name in KNOWN_ORGS.items():
+        if key in low: org = name; break
+    if not org and host:
+        parts = host.split(".")
+        org = parts[-2] if len(parts) >= 2 else host   # dominio de 2º nivel como pista
+    is_proxy = any(p in low for p in PROXY_HOST_PATTERNS)
+    res = (org or "(desconocida)", host or "(sin DNS inverso)", is_proxy)
+    _rdns_cache[ip] = res
+    return res
+
 def scan_network():
     rows = psjson("Get-NetTCPConnection -State Established | Select-Object LocalPort,RemoteAddress,RemotePort,OwningProcess")
     out = []; procs_by_pid = {}
@@ -302,9 +459,19 @@ def scan_network():
         ra = r.get("RemoteAddress", ""); pid = str(r.get("OwningProcess"))
         if ra in ("127.0.0.1", "::1", "0.0.0.0", "::"): continue
         pn = procs_by_pid.get(pid, "?"); counts[pn] = counts.get(pn, 0) + 1
-        out.append({"proc": pn, "remote": "%s:%s" % (ra, r.get("RemotePort")), "lport": r.get("LocalPort"), "pid": pid})
-    # marcar procesos con MUCHAS conexiones (posible nodo)
-    for o in out: o["flag"] = counts.get(o["proc"], 0) >= 25
+        out.append({"proc": pn, "ip": ra, "remote": "%s:%s" % (ra, r.get("RemotePort")), "lport": r.get("LocalPort"), "pid": pid})
+    # inteligencia: resolver organización (DNS inverso) de cada IP única, en paralelo
+    uniq = list(dict.fromkeys(o["ip"] for o in out))
+    orgs = {}
+    def _resolve(ip): orgs[ip] = _ip_org(ip)
+    ths = [threading.Thread(target=_resolve, args=(ip,)) for ip in uniq]
+    for t in ths: t.start()
+    for t in ths: t.join(timeout=2.0)
+    for o in out:
+        org, host, is_proxy = orgs.get(o["ip"], ("(desconocida)", "", False))
+        o["org"] = org; o["host"] = host; o["proxyhost"] = is_proxy
+        # marca en rojo: muchas conexiones (posible nodo) O destino que parece proxy/residencial
+        o["flag"] = counts.get(o["proc"], 0) >= 25 or is_proxy
     return out
 
 def scan_startup():
@@ -381,11 +548,12 @@ class OptiShield(tk.Tk):
         self.tab_prox = self._tab("🕵️  Anti-proxyware")
         self.tab_net  = self._tab("🌐  Red")
         self.tab_iot  = self._tab("🏘️  Red local")
+        self.tab_tv   = self._tab("📺  Limpiar TV")
         self.tab_priv = self._tab("🔒  Privacidad")
         self.tab_start= self._tab("🧹  Arranque")
         self.tab_integ= self._tab("🛡️  Integridad")
         self.tab_help = self._tab("💬  Apoyo OptiSuite")
-        self._build_dashboard(); self._build_proxyware(); self._build_network(); self._build_iot()
+        self._build_dashboard(); self._build_proxyware(); self._build_network(); self._build_iot(); self._build_tv()
         self._build_privacy(); self._build_startup(); self._build_integrity(); self._build_help()
         self._status("Listo. Modo solo-escaneo: nada se cambia sin tu confirmación." + ("" if is_admin() else "  ⚠ Ejecuta como administrador para aplicar cambios."))
 
@@ -590,10 +758,10 @@ class OptiShield(tk.Tk):
         top = tk.Frame(f, bg=BG); top.pack(fill="x", padx=16, pady=12)
         ttk.Label(top, text="Conexiones de red activas", style="H.TLabel").pack(side="left")
         ttk.Button(top, text="🔎 Escanear", style="Teal.TButton", command=lambda: self._runbg(scan_network, self.refresh_network)).pack(side="right")
-        ttk.Label(f, text="Procesos en rojo = muchas conexiones salientes (posible nodo de salida). Revísalos.", style="Mut.TLabel").pack(anchor="w", padx=16)
-        self.net_tree = ttk.Treeview(f, columns=("remote","lport","pid"), show="tree headings", height=16)
-        self.net_tree.heading("#0", text="Proceso"); self.net_tree.heading("remote", text="Destino"); self.net_tree.heading("lport", text="Puerto local"); self.net_tree.heading("pid", text="PID")
-        self.net_tree.column("#0", width=240); self.net_tree.column("remote", width=260); self.net_tree.column("lport", width=100); self.net_tree.column("pid", width=80)
+        ttk.Label(f, text="En rojo = muchas conexiones salientes (posible nodo) O destino que parece proxy/residencial. La columna Organización viene del DNS inverso (solo DNS, nada sale a terceros).", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
+        self.net_tree = ttk.Treeview(f, columns=("remote","org","pid"), show="tree headings", height=16)
+        self.net_tree.heading("#0", text="Proceso"); self.net_tree.heading("remote", text="Destino"); self.net_tree.heading("org", text="Organización (DNS inverso)"); self.net_tree.heading("pid", text="PID")
+        self.net_tree.column("#0", width=210); self.net_tree.column("remote", width=210); self.net_tree.column("org", width=280); self.net_tree.column("pid", width=70)
         self.net_tree.tag_configure("flag", foreground=RED)
         self.net_tree.pack(fill="both", expand=True, padx=16, pady=10)
 
@@ -601,7 +769,9 @@ class OptiShield(tk.Tk):
         if isinstance(data, Exception): return
         self.net_tree.delete(*self.net_tree.get_children())
         for x in data:
-            self.net_tree.insert("", "end", text=x["proc"], values=(x["remote"], x["lport"], x["pid"]),
+            org = x.get("org", "")
+            if x.get("proxyhost"): org = "⚠ PROXY/RESIDENCIAL: " + org
+            self.net_tree.insert("", "end", text=x["proc"], values=(x["remote"], org, x["pid"]),
                                  tags=("flag",) if x.get("flag") else ())
 
     # ---------- Red local (IoT / Badbox) ----------
@@ -609,11 +779,12 @@ class OptiShield(tk.Tk):
         f = self.tab_iot
         top = tk.Frame(f, bg=BG); top.pack(fill="x", padx=16, pady=12)
         ttk.Label(top, text="Red local — dispositivos y IoT (Badbox)", style="H.TLabel").pack(side="left")
-        ttk.Button(top, text="🔎 Escanear red", style="Teal.TButton", command=lambda: (self._status("Escaneando red local…"), self._runbg(scan_local_network, self.refresh_iot))).pack(side="right")
-        ttk.Label(f, text="Dispositivos vistos en tu red (tabla ARP). En rojo = puertos de depuración abiertos (5555 ADB, Telnet, FTP…), típico de TV-box/IoT comprometidos por Badbox. OptiShield solo informa: no toca esos equipos.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
-        self.iot_tree = ttk.Treeview(f, columns=("mac","open"), show="tree headings", height=15)
-        self.iot_tree.heading("#0", text="IP"); self.iot_tree.heading("mac", text="MAC"); self.iot_tree.heading("open", text="Puertos de depuración abiertos")
-        self.iot_tree.column("#0", width=180); self.iot_tree.column("mac", width=180); self.iot_tree.column("open", width=440)
+        ttk.Button(top, text="🔎 Escaneo rápido (ARP)", style="Teal.TButton", command=lambda: (self._status("Escaneando red local…"), self._runbg(scan_local_network, self.refresh_iot))).pack(side="right")
+        ttk.Button(top, text="🔬 Escaneo profundo", style="Ghost.TButton", command=self.deep_scan).pack(side="right", padx=8)
+        ttk.Label(f, text="Rápido = dispositivos ya vistos (tabla ARP). Profundo = barrido activo de TODA tu subred (ping .1-.254 + fabricante por MAC), tarda ~30-60s. En rojo = puertos de depuración abiertos (5555 ADB, Telnet, FTP…), típico de TV-box/IoT comprometidos por Badbox. OptiShield solo informa: no toca esos equipos.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
+        self.iot_tree = ttk.Treeview(f, columns=("mac","vendor","open"), show="tree headings", height=15)
+        self.iot_tree.heading("#0", text="IP"); self.iot_tree.heading("mac", text="MAC"); self.iot_tree.heading("vendor", text="Fabricante"); self.iot_tree.heading("open", text="Puertos de depuración abiertos")
+        self.iot_tree.column("#0", width=150); self.iot_tree.column("mac", width=150); self.iot_tree.column("vendor", width=180); self.iot_tree.column("open", width=360)
         self.iot_tree.tag_configure("risk", foreground=RED)
         self.iot_tree.pack(fill="both", expand=True, padx=16, pady=10)
         # Reputación de IP pública
@@ -621,13 +792,18 @@ class OptiShield(tk.Tk):
         self.ip_lbl = tk.Label(ipbar, text="Tu IP pública: (pulsa Ver)", bg=BG, fg=MUT, font=("Segoe UI",10)); self.ip_lbl.pack(side="left")
         ttk.Button(ipbar, text="🌐 Ver mi IP y reputación", style="Ghost.TButton", command=self.check_ip).pack(side="right")
 
+    def deep_scan(self):
+        self._status("Escaneo profundo en curso (barriendo toda tu subred)…")
+        def prog(done, total): self.after(0, lambda: self._status("Escaneo profundo: %d/%d equipos sondeados…" % (done, total)))
+        self._runbg(lambda: scan_local_network_deep(progress=prog), self.refresh_iot)
+
     def refresh_iot(self, data):
         if isinstance(data, Exception): return
         self.iot_tree.delete(*self.iot_tree.get_children())
         if not data:
-            self.iot_tree.insert("", "end", text="(sin dispositivos en la tabla ARP)", values=("","")); return
+            self.iot_tree.insert("", "end", text="(sin dispositivos)", values=("","","")); return
         for d in data:
-            self.iot_tree.insert("", "end", text=d["ip"], values=(d["mac"], " · ".join(d.get("open", [])) or "—"),
+            self.iot_tree.insert("", "end", text=d["ip"], values=(d["mac"], d.get("vendor",""), " · ".join(d.get("open", [])) or "—"),
                                  tags=("risk",) if d.get("risk") else ())
         self._status("Red local: %d dispositivos, %d con puertos de depuración." % (len(data), len([x for x in data if x.get('risk')])))
 
@@ -639,6 +815,99 @@ class OptiShield(tk.Tk):
             if messagebox.askyesno(APP, "Tu IP pública es %s.\n\n¿Abrir su reputación en AbuseIPDB (navegador)?\nSirve para ver si tu IP figura como abusiva (a veces por otro usuario del ISP)." % ip):
                 webbrowser.open("https://www.abuseipdb.com/check/%s" % ip)
         self._runbg(public_ip, done)
+
+    # ---------- Limpiar TV (ADB) ----------
+    def _build_tv(self):
+        f = self.tab_tv
+        self._adb = _find_adb(); self._tv_serial = None
+        top = tk.Frame(f, bg=BG); top.pack(fill="x", padx=16, pady=12)
+        ttk.Label(top, text="Limpiar TV / TV-box Android (ADB)", style="H.TLabel").pack(side="left")
+        ttk.Label(f, text="Conecta tu TV por USB o por red (habilitando temporalmente la Depuración). OptiShield lista sus apps, marca las sideload/sospechosas (típicas de Badbox), te deja desactivarlas o desinstalarlas y, al terminar, CIERRA la depuración. Todo con tu aprobación.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
+        # barra conexión
+        cbar = tk.Frame(f, bg=BG); cbar.pack(fill="x", padx=16, pady=8)
+        self.tv_status = tk.Label(cbar, text="", bg=BG, fg=MUT, font=("Segoe UI",9)); self.tv_status.pack(side="left")
+        ttk.Button(cbar, text="↻ Detectar", style="Ghost.TButton", command=self.tv_detect).pack(side="right")
+        tk.Label(cbar, text="IP del TV (red):", bg=BG, fg=MUT, font=("Segoe UI",9)).pack(side="right", padx=(0,4))
+        self.tv_ip = tk.Entry(cbar, width=16, bg=CARD, fg=INK, insertbackground=INK, relief="flat"); self.tv_ip.pack(side="right", padx=6); self.tv_ip.insert(0,"192.168.")
+        ttk.Button(cbar, text="🔌 Conectar por red", style="Ghost.TButton", command=self.tv_connect).pack(side="right", padx=6)
+        # lista de apps
+        self.tv_tree = ttk.Treeview(f, columns=("risk","inst"), show="tree headings", selectmode="extended", height=13)
+        self.tv_tree.heading("#0", text="Paquete (app)"); self.tv_tree.heading("risk", text="Riesgo"); self.tv_tree.heading("inst", text="Instalador")
+        self.tv_tree.column("#0", width=420); self.tv_tree.column("risk", width=90); self.tv_tree.column("inst", width=260)
+        self.tv_tree.tag_configure("ALTO", foreground=RED); self.tv_tree.tag_configure("revisar", foreground=AMBER)
+        self.tv_tree.pack(fill="both", expand=True, padx=16, pady=10)
+        bar = tk.Frame(f, bg=BG); bar.pack(fill="x", padx=16, pady=(0,14))
+        ttk.Button(bar, text="📋 Listar apps", style="Teal.TButton", command=self.tv_list).pack(side="left")
+        ttk.Button(bar, text="🚫 Desactivar", style="Ghost.TButton", command=lambda: self.tv_act("disable")).pack(side="left", padx=6)
+        ttk.Button(bar, text="🗑 Desinstalar", style="Ghost.TButton", command=lambda: self.tv_act("uninstall")).pack(side="left")
+        ttk.Button(bar, text="🔒 Cerrar depuración del TV", style="Ghost.TButton", command=self.tv_close).pack(side="right")
+        self.tv_detect()
+
+    def tv_detect(self):
+        self._adb = _find_adb()
+        if not self._adb:
+            self.tv_status.config(text="⚠ No encuentro ADB. Pon platform-tools junto al programa o instálalo.", fg="#ffb4b4"); return
+        def work(): return adb_devices(self._adb)
+        def done(devs):
+            if isinstance(devs, Exception) or not devs:
+                self.tv_status.config(text="ADB OK. Sin dispositivos. Conecta el TV por USB o pulsa 'Conectar por red'.", fg=MUT); self._tv_serial=None; return
+            self._tv_serial = devs[0]
+            model = adb_model(self._adb, self._tv_serial)
+            self.tv_status.config(text="✅ Conectado: %s  [%s]" % (self._tv_serial, model), fg=TEAL2)
+        self._runbg(work, done)
+
+    def tv_connect(self):
+        if not self._adb: messagebox.showwarning(APP,"No encuentro ADB (platform-tools)."); return
+        ip = self.tv_ip.get().strip()
+        if not ip or ip == "192.168.": messagebox.showinfo(APP,"Escribe la IP del TV (mira Ajustes → Red del TV)."); return
+        self.tv_status.config(text="Conectando a %s…" % ip)
+        def work(): adb_connect(self._adb, ip); return adb_devices(self._adb)
+        def done(devs):
+            if isinstance(devs, Exception) or not devs:
+                self.tv_status.config(text="No pude conectar. ¿Activaste 'Depuración por red' en el TV y aceptaste el aviso?", fg="#ffb4b4"); return
+            self.tv_detect()
+        self._runbg(work, done)
+
+    def tv_list(self):
+        if not self._adb or not self._tv_serial: messagebox.showinfo(APP,"Primero conecta el TV (USB o red) y pulsa Detectar."); return
+        self._status("Listando apps del TV…")
+        self._runbg(lambda: adb_list_packages(self._adb, self._tv_serial), self._tv_fill)
+
+    def _tv_fill(self, pkgs):
+        if isinstance(pkgs, Exception): return
+        self.tv_tree.delete(*self.tv_tree.get_children())
+        for p in pkgs:
+            self.tv_tree.insert("", "end", iid=p["pkg"], text=p["pkg"], values=(p["risk"], p["installer"]),
+                                tags=(p["risk"],) if p["risk"] in ("ALTO","revisar") else ())
+        flagged = len([p for p in pkgs if p["flag"]])
+        self._status("TV: %d apps de terceros (%d para revisar/altas)." % (len(pkgs), flagged))
+
+    def tv_act(self, mode):
+        if not self._adb or not self._tv_serial: messagebox.showinfo(APP,"Conecta el TV primero."); return
+        sel = self.tv_tree.selection()
+        if not sel: messagebox.showinfo(APP,"Selecciona en la lista las apps a tratar."); return
+        verb = "DESACTIVAR" if mode=="disable" else "DESINSTALAR"
+        if not messagebox.askyesno(APP, "Vas a %s %d app(s) del TV:\n\n• %s\n\n¿Continuar?" % (verb, len(sel), "\n• ".join(sel))): return
+        def work():
+            ok=0
+            for pkg in sel:
+                r = adb_disable(self._adb,self._tv_serial,pkg) if mode=="disable" else adb_uninstall(self._adb,self._tv_serial,pkg)
+                if "Success" in r or "disabled" in r.lower(): ok+=1
+                log("TV %s %s -> %s" % (mode, pkg, r.strip()[:60]))
+            return ok
+        def done(ok):
+            messagebox.showinfo(APP,"Hecho: %d/%d app(s) %s." % (ok, len(sel), verb.lower()+"das"))
+            self.tv_list()
+        self._runbg(work, done)
+
+    def tv_close(self):
+        if not self._adb or not self._tv_serial: messagebox.showinfo(APP,"Conecta el TV primero."); return
+        if not messagebox.askyesno(APP,"Se DESACTIVARÁ la depuración (ADB) del TV para cerrarlo bien.\n(Recomendado al terminar.) ¿Continuar?"): return
+        def work(): return adb_close_debug(self._adb, self._tv_serial)
+        def done(_):
+            messagebox.showinfo(APP,"Depuración del TV cerrada. Recuerda también desactivar 'Opciones de desarrollador' en el TV.")
+            self.tv_status.config(text="🔒 Depuración cerrada en el TV.", fg=TEAL2)
+        self._runbg(work, done)
 
     # ---------- Privacidad ----------
     def _build_privacy(self):
