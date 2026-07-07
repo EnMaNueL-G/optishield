@@ -13,6 +13,11 @@ WHATSAPP = "+56 9 7832 7863"
 WA_URL = "https://wa.me/56978327863"
 EMAIL = "support@optisuite.app"
 WEB = "optisuite.app"
+GITHUB = "https://github.com/EnMaNueL-G/optishield"
+KOFI = "https://ko-fi.com/optisuite"
+LIBERAPAY = "https://liberapay.com/OptiSuite.app/donate"
+BINANCE_ID = "1140153333"
+USDT_BSC = "0x0a9a0d8d816ede885d1d4a5c94369a72ef86b3c1"
 
 # ---- rutas de datos (config, backups, logs) ----
 DATA_DIR = os.path.join(os.environ.get("PROGRAMDATA", os.path.expanduser("~")), "OptiShield")
@@ -23,6 +28,121 @@ for d in (DATA_DIR, BACKUP_DIR, LOG_DIR):
     except Exception: pass
 
 CREATE_NO_WINDOW = 0x08000000
+
+# ======================= IDIOMA (i18n ES/EN) =======================
+CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
+def load_config():
+    try:
+        with open(CONFIG_FILE, encoding="utf-8") as f: return json.load(f)
+    except Exception: return {}
+def save_config(c):
+    try:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f: json.dump(c, f, ensure_ascii=False, indent=2)
+    except Exception: pass
+
+def _detect_lang():
+    cfg = load_config()
+    if cfg.get("lang") in ("es", "en"): return cfg["lang"]
+    try:
+        import locale
+        loc = (locale.getdefaultlocale()[0] or "").lower()
+    except Exception:
+        loc = ""
+    return "en" if loc.startswith("en") else "es"
+
+LANG = _detect_lang()
+
+# Traducciones inglesas indexadas por el texto español EXACTO (mismo string que se ve en la UI).
+# Lo que no esté aquí, se queda en español (degradación elegante).
+TR = {
+    # tabs
+    "🏠  Panel": "🏠  Dashboard",
+    "🕵️  Anti-proxyware": "🕵️  Anti-proxyware",
+    "🌐  Red": "🌐  Network",
+    "🏘️  Red local": "🏘️  Local network",
+    "📺  Limpiar TV": "📺  Clean TV",
+    "🔒  Privacidad": "🔒  Privacy",
+    "🧹  Arranque": "🧹  Startup",
+    "🛡️  Integridad": "🛡️  Integrity",
+    "💬  Apoyo OptiSuite": "💬  Support OptiSuite",
+    # header / estado
+    "  Escudo de privacidad y seguridad · by OptiSuite": "  Privacy & security shield · by OptiSuite",
+    "ADMIN": "ADMIN", "SIN ADMIN": "NO ADMIN",
+    "Listo. Modo solo-escaneo: nada se cambia sin tu confirmación.": "Ready. Scan-only mode: nothing changes without your confirmation.",
+    "  ⚠ Ejecuta como administrador para aplicar cambios.": "  ⚠ Run as administrator to apply changes.",
+    "Analizando el sistema…": "Analyzing the system…",
+    "Análisis terminado.": "Analysis complete.",
+    "Escaneando red local…": "Scanning local network…",
+    "Escaneo profundo en curso (barriendo toda tu subred)…": "Deep scan in progress (sweeping your whole subnet)…",
+    "Consultando…": "Checking…",
+    # panel
+    "Estado general del sistema": "System overview",
+    "Pulsa «Analizar todo» para un chequeo completo. Nada se cambia sin tu confirmación.": "Click «Analyze all» for a full check. Nothing is changed without your confirmation.",
+    "🔎 Analizar todo": "🔎 Analyze all",
+    "👁 Vigilancia activa (revisa proxyware cada 15 min)": "👁 Active monitoring (checks proxyware every 15 min)",
+    # anti-proxyware
+    "Anti-proxyware / anti-botnet": "Anti-proxyware / anti-botnet",
+    "🔎 Escanear": "🔎 Scan",
+    "Detecta apps que convierten tu equipo en nodo de proxy (NetNut/Badbox y similares). Marca lo que quieras neutralizar. Lo tuyo (ej. IPRoyal instalado a propósito) déjalo sin marcar.": "Detects apps that turn your PC into a proxy node (NetNut/Badbox and similar). Check what you want to neutralize. Leave your own (e.g. IPRoyal installed on purpose) unchecked.",
+    "Detección": "Detection", "Riesgo": "Risk", "Veredicto": "Verdict", "Evidencia": "Evidence",
+    "🛑 Neutralizar seleccionados (detener + bloquear + cuarentena)": "🛑 Neutralize selected (stop + block + quarantine)",
+    "  (crea copia de seguridad y bloquea sus dominios; no borra archivos)": "  (creates a backup and blocks their domains; does not delete files)",
+    "✔ Sin proxyware detectado": "✔ No proxyware detected",
+    # red
+    "Conexiones de red activas": "Active network connections",
+    "En rojo = muchas conexiones salientes (posible nodo) O destino que parece proxy/residencial. La columna Organización viene del DNS inverso (solo DNS, nada sale a terceros).": "Red = many outbound connections (possible node) OR a destination that looks like proxy/residential. The Organization column comes from reverse DNS (DNS only, nothing sent to third parties).",
+    "Proceso": "Process", "Destino": "Destination", "Organización (DNS inverso)": "Organization (reverse DNS)", "PID": "PID",
+    # red local
+    "Red local — dispositivos y IoT (Badbox)": "Local network — devices & IoT (Badbox)",
+    "🔎 Escaneo rápido (ARP)": "🔎 Quick scan (ARP)",
+    "🔬 Escaneo profundo": "🔬 Deep scan",
+    "Rápido = dispositivos ya vistos (tabla ARP). Profundo = barrido activo de TODA tu subred (ping .1-.254 + fabricante por MAC), tarda ~30-60s. En rojo = puertos de depuración abiertos (5555 ADB, Telnet, FTP…) en un equipo NO marcado de confianza — típico de TV-box/IoT comprometidos por Badbox. Selecciona un equipo y pulsa «Detalles» para ver por qué; marca tus propios equipos como «de confianza» para que dejen de salir en rojo.": "Quick = devices already seen (ARP table). Deep = active sweep of your WHOLE subnet (ping .1-.254 + vendor by MAC), takes ~30-60s. Red = open debug ports (5555 ADB, Telnet, FTP…) on a device NOT marked as trusted — typical of TV-boxes/IoT compromised by Badbox. Select a device and click «Details» to see why; mark your own devices as «trusted» so they stop showing in red.",
+    "IP": "IP", "MAC": "MAC", "Fabricante": "Vendor", "Nombre / dispositivo": "Name / device",
+    "Puertos de depuración abiertos": "Open debug ports",
+    "✓ Marcar de confianza": "✓ Mark as trusted", "✕ Quitar de confianza": "✕ Remove trust",
+    "🔎 Detalles del equipo": "🔎 Device details", "(doble clic = detalles)": "(double-click = details)",
+    "Tu IP pública: (pulsa Ver)": "Your public IP: (click View)",
+    "🌐 Ver mi IP y reputación": "🌐 View my IP & reputation",
+    "(sin dispositivos)": "(no devices)",
+    "No pude obtener la IP (¿sin internet?)": "Couldn't get the IP (no internet?)",
+    "Tu IP pública: %s": "Your public IP: %s",
+    # limpiar TV
+    "Limpiar TV / TV-box Android (ADB)": "Clean Android TV / TV-box (ADB)",
+    "Conecta tu TV por USB o por red (habilitando temporalmente la Depuración). OptiShield lista sus apps, marca las sideload/sospechosas (típicas de Badbox), te deja desactivarlas o desinstalarlas y, al terminar, CIERRA la depuración. Todo con tu aprobación.": "Connect your TV by USB or over the network (temporarily enabling Debugging). OptiShield lists its apps, flags the sideloaded/suspicious ones (typical of Badbox), lets you disable or uninstall them and, when finished, CLOSES debugging. All with your approval.",
+    "↻ Detectar": "↻ Detect", "IP del TV (red):": "TV IP (network):", "🔌 Conectar por red": "🔌 Connect over network",
+    "Paquete (app)": "Package (app)", "Instalador": "Installer", "📋 Listar apps": "📋 List apps",
+    "🚫 Desactivar": "🚫 Disable", "🗑 Desinstalar": "🗑 Uninstall", "🔒 Cerrar depuración del TV": "🔒 Close TV debugging",
+    "⚠ No encuentro ADB. Pon platform-tools junto al programa o instálalo.": "⚠ ADB not found. Put platform-tools next to the program or install it.",
+    "ADB OK. Sin dispositivos. Conecta el TV por USB o pulsa 'Conectar por red'.": "ADB OK. No devices. Connect the TV by USB or click 'Connect over network'.",
+    "✅ Conectado: %s  [%s]": "✅ Connected: %s  [%s]", "Conectando a %s…": "Connecting to %s…",
+    "No pude conectar. ¿Activaste 'Depuración por red' en el TV y aceptaste el aviso?": "Couldn't connect. Did you enable 'Network debugging' on the TV and accept the prompt?",
+    "🔒 Depuración cerrada en el TV.": "🔒 Debugging closed on the TV.",
+    # privacidad
+    "Blindaje de privacidad y telemetría": "Privacy & telemetry hardening",
+    "Marca lo que quieras desactivar. NO se toca Defender, Firewall ni UAC. Todo reversible.": "Check what you want to disable. Defender, Firewall and UAC are NOT touched. Everything is reversible.",
+    "🔒 Aplicar seleccionados": "🔒 Apply selected", "↩ Revertir seleccionados": "↩ Revert selected",
+    # arranque
+    "Auditoría de arranque": "Startup audit",
+    "Programas, tareas y entradas que arrancan con Windows. En rojo = sospechoso (Temp, comandos ofuscados). En ámbar = OBSOLETO: apunta a un archivo que ya no existe (típico de algo que desinstalaste). Puedes DESACTIVAR (deja de arrancar pero se conserva) o ELIMINAR lo que no sirva — todo reversible.": "Programs, tasks and entries that start with Windows. Red = suspicious (Temp, obfuscated commands). Amber = ORPHANED: points to a file that no longer exists (typical of something you uninstalled). You can DISABLE (stops starting but is kept) or DELETE what you don't need — all reversible.",
+    "Nombre": "Name", "Tipo": "Type", "Ubicación": "Location", "Estado": "Status", "Comando": "Command",
+    "⛔ Desactivar": "⛔ Disable", "✅ Activar": "✅ Enable", "🧹 Limpiar obsoletas": "🧹 Clean orphaned", "🗑 Eliminar": "🗑 Delete",
+    "Desactivar es reversible (Activar lo devuelve). Requiere administrador.": "Disabling is reversible (Enable brings it back). Requires administrator.",
+    # integridad
+    "Integridad del sistema": "System integrity",
+    "🧽 Quitar bloqueos hosts": "🧽 Remove hosts blocks", "🧯 Quitar reglas firewall": "🧯 Remove firewall rules",
+    "📄 Exportar informe": "📄 Export report",
+    # apoyo
+    "Una herramienta gratuita de OptiSuite para proteger tu privacidad y seguridad.": "A free OptiSuite tool to protect your privacy and security.",
+    "Defensiva · reversible · 100%% local (no enviamos tus datos a ningún sitio).": "Defensive · reversible · 100%% local (we never send your data anywhere).",
+    "Defensiva · reversible · 100% local (no enviamos tus datos a ningún sitio).": "Defensive · reversible · 100% local (we never send your data anywhere).",
+    "Es gratis y sin anuncios. Si te ayuda, una estrella en GitHub o una aportación\nmantienen OptiSuite vivo. ¡Gracias! 🙌": "It's free and ad-free. If it helps you, a GitHub star or a small donation\nkeep OptiSuite alive. Thank you! 🙌",
+    "⭐ Estrella en GitHub": "⭐ Star on GitHub", "☕ Ko-fi": "☕ Ko-fi", "♡ Liberapay": "♡ Liberapay", "🌐 Visitar OptiSuite": "🌐 Visit OptiSuite",
+    "O con criptomonedas (toca para copiar):": "Or with crypto (tap to copy):",
+    "© OptiSuite · OptiShield es gratuito. Si te ayuda, compártelo.": "© OptiSuite · OptiShield is free. If it helps you, share it.",
+}
+
+def tr(s):
+    return TR.get(s, s) if LANG == "en" else s
 
 # ======================= BASE DE DATOS DE PROXYWARE =======================
 # Familias conocidas de "bandwidth sharing" / proxyware / nodos de salida residenciales.
@@ -248,11 +368,16 @@ def scan_local_network():
         if ip.endswith(".255") or ip.startswith("224.") or ip.startswith("239.") or mac.startswith("ff-ff"): continue
         if "dynamic" in typ or "din" in typ:
             if ip not in seen: seen.append(ip); devices.append({"ip": ip, "mac": mac})
+    t = load_trusted()
     for dev in devices:
         openp = []
         for port, label in DEBUG_PORTS.items():
             if _port_open(dev["ip"], port): openp.append("%d %s" % (port, label))
-        dev["open"] = openp; dev["risk"] = bool(openp)
+        dev["open"] = openp
+        dev["vendor"] = mac_vendor(dev["mac"]) or "(desconocido)"
+        dev["host"] = host_name(dev["ip"])
+        dev["trusted"] = is_trusted(t, dev["ip"], dev["mac"])
+        dev["risk"] = bool(openp) and not dev["trusted"]
     return devices
 
 # OUI (prefijo MAC) -> fabricante. Lista offline de los más comunes en casa (privado, sin consultar a terceros).
@@ -275,6 +400,46 @@ def mac_vendor(mac):
     if not mac: return ""
     pref = mac.lower().replace(":", "-")[:8]
     return OUI.get(pref, "")
+
+# ---- Equipos de confianza (para NO marcar en rojo tus propios dispositivos) ----
+TRUSTED_FILE = os.path.join(DATA_DIR, "trusted.json")
+def _norm_mac(mac): return (mac or "").lower().replace(":", "-")
+def load_trusted():
+    try:
+        import json
+        with open(TRUSTED_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+        return {"ips": set(d.get("ips", [])), "macs": set(_norm_mac(x) for x in d.get("macs", []))}
+    except Exception:
+        return {"ips": set(), "macs": set()}
+def save_trusted(t):
+    try:
+        import json
+        with open(TRUSTED_FILE, "w", encoding="utf-8") as f:
+            json.dump({"ips": sorted(t["ips"]), "macs": sorted(t["macs"])}, f, indent=2)
+    except Exception: pass
+def is_trusted(t, ip, mac):
+    return (ip in t["ips"]) or (bool(mac) and _norm_mac(mac) in t["macs"])
+
+def host_name(ip):
+    """Nombre del dispositivo por DNS inverso (rápido y local). '' si no resuelve."""
+    try:
+        socket.setdefaulttimeout(0.7)
+        return socket.gethostbyaddr(ip)[0]
+    except Exception:
+        return ""
+    finally:
+        socket.setdefaulttimeout(None)
+
+# Explicación de por qué un puerto de depuración abierto es sospechoso (para evitar falsas alarmas y dar contexto).
+PORT_INFO = {
+    5555: "Depuración ADB de Android expuesta a la red — el vector típico de Badbox. En una TV-box legítima debería estar CERRADO. Si es tu equipo y activaste ADB por red a propósito, márcalo de confianza y ciérralo al terminar.",
+    23:   "Telnet: acceso remoto SIN cifrar, muy usado por botnets IoT (Mirai/Badbox). Casi ningún dispositivo doméstico moderno debería tenerlo abierto.",
+    21:   "FTP: transferencia de archivos sin cifrar; en un equipo de casa normal no suele estar abierto.",
+    9527: "Puerto de depuración/UART común en cámaras IP y TV-box baratas comprometidas.",
+    7001: "Puerto de depuración/administración; sospechoso en un dispositivo de consumo.",
+    4444: "Puerto asociado a backdoors (p. ej. Metasploit); muy sospechoso.",
+}
 
 def _my_subnet():
     """Devuelve (base, mi_ip) p.ej. ('192.168.1.', '192.168.1.34'). Asume /24 (lo típico en casa)."""
@@ -311,12 +476,16 @@ def scan_local_network_deep(progress=None):
     for line in arp.splitlines():
         m = re.search(r"(\d+\.\d+\.\d+\.\d+)\s+([0-9a-fA-F-]{11,17})", line)
         if m: macs[m.group(1)] = m.group(2)
+    t = load_trusted()
     devices = []
     for ip in sorted(alive, key=lambda x: int(x.rsplit(".",1)[1])):
         mac = macs.get(ip, "")
         openp = [ "%d %s" % (p, l) for p, l in DEBUG_PORTS.items() if _port_open(ip, p) ]
-        devices.append({"ip": ip, "mac": mac, "vendor": mac_vendor(mac) or ("(este PC)" if ip == myip else "(desconocido)"),
-                        "open": openp, "risk": bool(openp)})
+        trusted = is_trusted(t, ip, mac) or (ip == myip)
+        devices.append({"ip": ip, "mac": mac,
+                        "vendor": mac_vendor(mac) or ("(este PC)" if ip == myip else "(desconocido)"),
+                        "host": ("(este PC)" if ip == myip else host_name(ip)),
+                        "open": openp, "trusted": trusted, "risk": bool(openp) and not trusted})
     return devices
 
 def public_ip():
@@ -474,6 +643,51 @@ def scan_network():
         o["flag"] = counts.get(o["proc"], 0) >= 25 or is_proxy
     return out
 
+def _exe_from_cmd(cmd):
+    """Extrae la ruta del ejecutable de una línea de comando de arranque."""
+    cmd = (cmd or "").strip()
+    if not cmd: return ""
+    if cmd[0] == '"':
+        end = cmd.find('"', 1)
+        return cmd[1:end] if end > 0 else cmd[1:]
+    m = re.match(r'^(.*?\.(?:exe|bat|cmd|com|scr))\b', cmd, re.I)
+    if m: return m.group(1)
+    return cmd.split()[0]
+
+def _is_orphan(cmd):
+    """True si el arranque apunta a un archivo que YA NO EXISTE (típico de algo desinstalado)."""
+    exe = os.path.expandvars(_exe_from_cmd(cmd))
+    if not exe: return False
+    low = exe.lower()
+    if not any(low.endswith(e) for e in (".exe", ".bat", ".cmd", ".com", ".scr")): return False
+    try:
+        return not os.path.exists(exe)
+    except Exception:
+        return False
+
+# --- Habilitar/deshabilitar entradas Run como hace el Administrador de tareas (clave StartupApproved) ---
+SA_RUN = {"HKCU": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run",
+          "HKLM": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run"}
+def startup_enabled(hive, name):
+    """True si la entrada Run está habilitada. Ausente en StartupApproved = habilitada por defecto."""
+    try:
+        k = winreg.OpenKey(_hkey(hive), SA_RUN[hive], 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY)
+        v, _ = winreg.QueryValueEx(k, name); winreg.CloseKey(k)
+        # byte 0: par (02/06) = habilitada, impar (03/07) = deshabilitada
+        return not (len(v) >= 1 and (v[0] & 1))
+    except Exception:
+        return True
+def set_startup_enabled(hive, name, enabled):
+    import struct
+    k = winreg.CreateKeyEx(_hkey(hive), SA_RUN[hive], 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
+    if enabled:
+        blob = bytes([2,0,0,0,0,0,0,0,0,0,0,0])
+    else:
+        epoch = datetime.datetime(1601,1,1, tzinfo=datetime.timezone.utc)
+        ft = int((datetime.datetime.now(datetime.timezone.utc) - epoch).total_seconds() * 10_000_000)
+        blob = bytes([3,0,0,0]) + struct.pack("<Q", ft)
+    winreg.SetValueEx(k, name, 0, winreg.REG_BINARY, blob); winreg.CloseKey(k)
+
 def scan_startup():
     items = []
     for hive, path in [("HKLM", "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"),
@@ -484,14 +698,26 @@ def scan_startup():
             while True:
                 try:
                     name, val, _ = winreg.EnumValue(k, i); i += 1
-                    susp = any(x in str(val).lower() for x in ["\\temp\\", "\\appdata\\local\\temp", "powershell -e", "-enc "])
-                    items.append({"type": "Run", "loc": hive, "name": name, "cmd": str(val), "susp": susp})
+                    cmd = str(val)
+                    susp = any(x in cmd.lower() for x in ["\\temp\\", "\\appdata\\local\\temp", "powershell -e", "-enc "])
+                    items.append({"type": "Run", "loc": hive, "name": name, "cmd": cmd, "susp": susp,
+                                  "orphan": _is_orphan(cmd), "hive": hive, "regpath": path,
+                                  "enabled": startup_enabled(hive, name)})
                 except OSError: break
             winreg.CloseKey(k)
         except Exception: pass
-    for t in psjson("Get-ScheduledTask | Where-Object {$_.State -ne 'Disabled'} | Select-Object TaskName,TaskPath,State")[:200]:
-        if isinstance(t, dict):
-            items.append({"type": "Tarea", "loc": t.get("TaskPath", ""), "name": t.get("TaskName", ""), "cmd": "", "susp": False})
+    # Tareas: activas (cualquier origen) + tareas de TERCEROS aunque estén deshabilitadas (para poder reactivarlas).
+    # Se ocultan las de Microsoft deshabilitadas (ruido del sistema).
+    for t in psjson("Get-ScheduledTask | Select-Object TaskName,TaskPath,@{n='State';e={$_.State.ToString()}}")[:600]:
+        if not isinstance(t, dict): continue
+        tp = t.get("TaskPath") or "\\"
+        state = str(t.get("State") or "")
+        is_ms = tp.lower().startswith("\\microsoft\\")
+        disabled = state.lower() == "disabled"
+        if is_ms and disabled: continue
+        items.append({"type": "Tarea", "loc": tp, "name": t.get("TaskName", ""),
+                      "cmd": "", "susp": False, "orphan": False,
+                      "taskpath": tp, "taskname": t.get("TaskName", ""), "enabled": not disabled})
     return items
 
 def scan_integrity():
@@ -541,7 +767,12 @@ class OptiShield(tk.Tk):
         super().__init__()
         self.title("%s %s · %s" % (APP, VERSION, BRAND))
         self.geometry("1060x720"); self.minsize(920, 620); self.configure(bg=BG)
+        try:
+            _ico = os.path.join(sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__)), "icon.ico")
+            if os.path.exists(_ico): self.iconbitmap(_ico)
+        except Exception: pass
         self._style()
+        self._tab_titles = []
         self._header()
         self.nb = ttk.Notebook(self); self.nb.pack(fill="both", expand=True, padx=12, pady=(0,10))
         self.tab_dash = self._tab("🏠  Panel")
@@ -555,7 +786,54 @@ class OptiShield(tk.Tk):
         self.tab_help = self._tab("💬  Apoyo OptiSuite")
         self._build_dashboard(); self._build_proxyware(); self._build_network(); self._build_iot(); self._build_tv()
         self._build_privacy(); self._build_startup(); self._build_integrity(); self._build_help()
-        self._status("Listo. Modo solo-escaneo: nada se cambia sin tu confirmación." + ("" if is_admin() else "  ⚠ Ejecuta como administrador para aplicar cambios."))
+        self._snapshot_i18n()
+        if LANG == "en": self._apply_lang()
+        self._status(tr("Listo. Modo solo-escaneo: nada se cambia sin tu confirmación.") + ("" if is_admin() else tr("  ⚠ Ejecuta como administrador para aplicar cambios.")))
+
+    # ---------- i18n ----------
+    def _snapshot_i18n(self):
+        """Guarda el texto español original de cada widget para poder alternar ES/EN sin reconstruir."""
+        self._orig_text = []   # (widget, español)
+        self._orig_head = []   # (treeview, columna, español)
+        def walk(w):
+            try:
+                t = w.cget("text")
+                if isinstance(t, str) and t.strip(): self._orig_text.append((w, t))
+            except Exception: pass
+            if isinstance(w, ttk.Treeview):
+                cols = ("#0",) + tuple(w.cget("columns") or ())
+                for c in cols:
+                    try:
+                        ht = w.heading(c).get("text")
+                        if ht and str(ht).strip(): self._orig_head.append((w, c, str(ht)))
+                    except Exception: pass
+            for c in w.winfo_children(): walk(c)
+        walk(self)
+
+    def _apply_lang(self):
+        for w, es in getattr(self, "_orig_text", []):
+            try: w.configure(text=tr(es))
+            except Exception: pass
+        for tree, col, es in getattr(self, "_orig_head", []):
+            try: tree.heading(col, text=tr(es))
+            except Exception: pass
+        for i, es in enumerate(getattr(self, "_tab_titles", [])):
+            try: self.nb.tab(i, text=tr(es))
+            except Exception: pass
+
+    def set_lang(self, code):
+        global LANG
+        if code not in ("es", "en") or code == LANG: return
+        LANG = code
+        cfg = load_config(); cfg["lang"] = code; save_config(cfg)
+        self._apply_lang()
+        self._update_lang_buttons()
+        self._status(tr("Listo. Modo solo-escaneo: nada se cambia sin tu confirmación.") + ("" if is_admin() else tr("  ⚠ Ejecuta como administrador para aplicar cambios.")))
+
+    def _update_lang_buttons(self):
+        for code, btn in getattr(self, "_lang_btns", {}).items():
+            on = (code == LANG)
+            btn.config(bg=(TEAL if on else BG2), fg=("#04210f" if on else MUT))
 
     def _style(self):
         s = ttk.Style(self); s.theme_use("clam")
@@ -584,15 +862,26 @@ class OptiShield(tk.Tk):
         badge = "ADMIN" if is_admin() else "SIN ADMIN"
         tk.Label(h, text=badge, bg=(BG2 if is_admin() else "#3a2323"), fg=(TEAL2 if is_admin() else "#ffb4b4"),
                  font=("Segoe UI",9,"bold"), padx=10, pady=3).pack(side="right")
+        # selector de idioma ES | EN
+        lang = tk.Frame(h, bg=BG); lang.pack(side="right", padx=(0,12))
+        self._lang_btns = {}
+        for code, label in (("es", "ES"), ("en", "EN")):
+            b = tk.Button(lang, text=label, bd=0, relief="flat", padx=9, pady=3, cursor="hand2",
+                          font=("Segoe UI",9,"bold"), activebackground=TEAL2,
+                          command=lambda c=code: self.set_lang(c))
+            b.pack(side="left", padx=1)
+            self._lang_btns[code] = b
+        self._update_lang_buttons()
 
     def _tab(self, title):
+        self._tab_titles.append(title)
         f = ttk.Frame(self.nb); self.nb.add(f, text=title); return f
 
     def _status(self, msg):
         if not hasattr(self, "_sb"):
             self._sb = tk.Label(self, text="", bg=CARD, fg=MUT, anchor="w", font=("Segoe UI",9), padx=12, pady=5)
             self._sb.pack(fill="x", side="bottom")
-        self._sb.config(text=msg)
+        self._sb.config(text=tr(msg))
 
     def _runbg(self, fn, done):
         def wrap():
@@ -781,12 +1070,19 @@ class OptiShield(tk.Tk):
         ttk.Label(top, text="Red local — dispositivos y IoT (Badbox)", style="H.TLabel").pack(side="left")
         ttk.Button(top, text="🔎 Escaneo rápido (ARP)", style="Teal.TButton", command=lambda: (self._status("Escaneando red local…"), self._runbg(scan_local_network, self.refresh_iot))).pack(side="right")
         ttk.Button(top, text="🔬 Escaneo profundo", style="Ghost.TButton", command=self.deep_scan).pack(side="right", padx=8)
-        ttk.Label(f, text="Rápido = dispositivos ya vistos (tabla ARP). Profundo = barrido activo de TODA tu subred (ping .1-.254 + fabricante por MAC), tarda ~30-60s. En rojo = puertos de depuración abiertos (5555 ADB, Telnet, FTP…), típico de TV-box/IoT comprometidos por Badbox. OptiShield solo informa: no toca esos equipos.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
-        self.iot_tree = ttk.Treeview(f, columns=("mac","vendor","open"), show="tree headings", height=15)
-        self.iot_tree.heading("#0", text="IP"); self.iot_tree.heading("mac", text="MAC"); self.iot_tree.heading("vendor", text="Fabricante"); self.iot_tree.heading("open", text="Puertos de depuración abiertos")
-        self.iot_tree.column("#0", width=150); self.iot_tree.column("mac", width=150); self.iot_tree.column("vendor", width=180); self.iot_tree.column("open", width=360)
-        self.iot_tree.tag_configure("risk", foreground=RED)
-        self.iot_tree.pack(fill="both", expand=True, padx=16, pady=10)
+        ttk.Label(f, text="Rápido = dispositivos ya vistos (tabla ARP). Profundo = barrido activo de TODA tu subred (ping .1-.254 + fabricante por MAC), tarda ~30-60s. En rojo = puertos de depuración abiertos (5555 ADB, Telnet, FTP…) en un equipo NO marcado de confianza — típico de TV-box/IoT comprometidos por Badbox. Selecciona un equipo y pulsa «Detalles» para ver por qué; marca tus propios equipos como «de confianza» para que dejen de salir en rojo.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
+        self.iot_tree = ttk.Treeview(f, columns=("mac","vendor","host","open"), show="tree headings", selectmode="extended", height=14)
+        self.iot_tree.heading("#0", text="IP"); self.iot_tree.heading("mac", text="MAC"); self.iot_tree.heading("vendor", text="Fabricante"); self.iot_tree.heading("host", text="Nombre / dispositivo"); self.iot_tree.heading("open", text="Puertos de depuración abiertos")
+        self.iot_tree.column("#0", width=120); self.iot_tree.column("mac", width=135); self.iot_tree.column("vendor", width=150); self.iot_tree.column("host", width=175); self.iot_tree.column("open", width=290)
+        self.iot_tree.tag_configure("risk", foreground=RED); self.iot_tree.tag_configure("trusted", foreground=TEAL2)
+        self.iot_tree.pack(fill="both", expand=True, padx=16, pady=(10,4))
+        self._iot_data = {}
+        self.iot_tree.bind("<Double-1>", lambda e: self.iot_details())
+        abar = tk.Frame(f, bg=BG); abar.pack(fill="x", padx=16, pady=(0,4))
+        ttk.Button(abar, text="✓ Marcar de confianza", style="Ghost.TButton", command=lambda: self.iot_trust(True)).pack(side="left")
+        ttk.Button(abar, text="✕ Quitar de confianza", style="Ghost.TButton", command=lambda: self.iot_trust(False)).pack(side="left", padx=8)
+        ttk.Button(abar, text="🔎 Detalles del equipo", style="Ghost.TButton", command=self.iot_details).pack(side="left")
+        tk.Label(abar, text="(doble clic = detalles)", bg=BG, fg=MUT, font=("Segoe UI",8)).pack(side="left", padx=8)
         # Reputación de IP pública
         ipbar = tk.Frame(f, bg=BG); ipbar.pack(fill="x", padx=16, pady=(0,14))
         self.ip_lbl = tk.Label(ipbar, text="Tu IP pública: (pulsa Ver)", bg=BG, fg=MUT, font=("Segoe UI",10)); self.ip_lbl.pack(side="left")
@@ -800,12 +1096,59 @@ class OptiShield(tk.Tk):
     def refresh_iot(self, data):
         if isinstance(data, Exception): return
         self.iot_tree.delete(*self.iot_tree.get_children())
+        self._iot_data = {}
         if not data:
-            self.iot_tree.insert("", "end", text="(sin dispositivos)", values=("","","")); return
+            self.iot_tree.insert("", "end", text="(sin dispositivos)", values=("","","","")); return
         for d in data:
-            self.iot_tree.insert("", "end", text=d["ip"], values=(d["mac"], d.get("vendor",""), " · ".join(d.get("open", [])) or "—"),
-                                 tags=("risk",) if d.get("risk") else ())
-        self._status("Red local: %d dispositivos, %d con puertos de depuración." % (len(data), len([x for x in data if x.get('risk')])))
+            tag = "risk" if d.get("risk") else ("trusted" if d.get("trusted") else "")
+            opentxt = " · ".join(d.get("open", [])) or "—"
+            if d.get("trusted") and d.get("open"): opentxt += "  (de confianza)"
+            iid = self.iot_tree.insert("", "end", text=d["ip"],
+                                       values=(d.get("mac",""), d.get("vendor",""), d.get("host","") or "—", opentxt),
+                                       tags=(tag,) if tag else ())
+            self._iot_data[iid] = d
+        self._status("Red local: %d dispositivos, %d con puertos de depuración (sin marcar de confianza)." % (len(data), len([x for x in data if x.get('risk')])))
+
+    def iot_trust(self, add):
+        sel = self.iot_tree.selection()
+        if not sel: messagebox.showinfo(APP, "Selecciona uno o varios equipos en la lista."); return
+        t = load_trusted()
+        for iid in sel:
+            d = self._iot_data.get(iid)
+            if not d: continue
+            if add:
+                t["ips"].add(d["ip"])
+                if d.get("mac"): t["macs"].add(_norm_mac(d["mac"]))
+            else:
+                t["ips"].discard(d["ip"])
+                if d.get("mac"): t["macs"].discard(_norm_mac(d["mac"]))
+        save_trusted(t)
+        for d in self._iot_data.values():
+            d["trusted"] = is_trusted(t, d["ip"], d.get("mac"))
+            d["risk"] = bool(d.get("open")) and not d["trusted"]
+        self.refresh_iot(list(self._iot_data.values()))
+        self._status(("Marcados de confianza: %d equipo(s). Ya no saldrán en rojo." if add else "Quitados de confianza: %d equipo(s).") % len(sel))
+
+    def iot_details(self):
+        sel = self.iot_tree.selection()
+        if not sel: messagebox.showinfo(APP, "Selecciona un equipo para ver sus detalles."); return
+        d = self._iot_data.get(sel[0])
+        if not d: return
+        L = ["IP:  %s" % d["ip"], "MAC:  %s" % (d.get("mac") or "—"),
+             "Fabricante:  %s" % (d.get("vendor") or "—"),
+             "Nombre (DNS inverso):  %s" % (d.get("host") or "(no resuelve)"),
+             "Marcado de confianza:  %s" % ("Sí" if d.get("trusted") else "No"), ""]
+        if d.get("open"):
+            L.append("Puertos de depuración abiertos:")
+            for op in d["open"]:
+                try: port = int(op.split()[0])
+                except Exception: port = None
+                L.append("• %s\n    %s" % (op, PORT_INFO.get(port, "Puerto de depuración/administración; conviene revisarlo.")))
+            if not d.get("trusted"):
+                L.append("\n➡ Si este equipo es TUYO y abriste ese puerto a propósito, márcalo de confianza para que deje de salir en rojo.")
+        else:
+            L.append("Sin puertos de depuración abiertos. ✔")
+        messagebox.showinfo("Detalles del dispositivo", "\n".join(L))
 
     def check_ip(self):
         self.ip_lbl.config(text="Consultando…")
@@ -952,19 +1295,86 @@ class OptiShield(tk.Tk):
         top = tk.Frame(f, bg=BG); top.pack(fill="x", padx=16, pady=12)
         ttk.Label(top, text="Auditoría de arranque", style="H.TLabel").pack(side="left")
         ttk.Button(top, text="🔎 Escanear", style="Teal.TButton", command=lambda: self._runbg(scan_startup, self.refresh_startup)).pack(side="right")
-        ttk.Label(f, text="Programas, tareas y entradas que arrancan con Windows. En rojo = sospechoso (Temp, comandos ofuscados).", style="Mut.TLabel").pack(anchor="w", padx=16)
-        self.start_tree = ttk.Treeview(f, columns=("type","loc","cmd"), show="tree headings", height=16)
-        self.start_tree.heading("#0", text="Nombre"); self.start_tree.heading("type", text="Tipo"); self.start_tree.heading("loc", text="Ubicación"); self.start_tree.heading("cmd", text="Comando")
-        self.start_tree.column("#0", width=220); self.start_tree.column("type", width=80); self.start_tree.column("loc", width=120); self.start_tree.column("cmd", width=440)
-        self.start_tree.tag_configure("susp", foreground=RED)
-        self.start_tree.pack(fill="both", expand=True, padx=16, pady=10)
+        ttk.Label(f, text="Programas, tareas y entradas que arrancan con Windows. En rojo = sospechoso (Temp, comandos ofuscados). En ámbar = OBSOLETO: apunta a un archivo que ya no existe (típico de algo que desinstalaste). Puedes DESACTIVAR (deja de arrancar pero se conserva) o ELIMINAR lo que no sirva — todo reversible.", style="Mut.TLabel", wraplength=980, justify="left").pack(anchor="w", padx=16)
+        self.start_tree = ttk.Treeview(f, columns=("type","loc","estado","cmd"), show="tree headings", selectmode="extended", height=15)
+        self.start_tree.heading("#0", text="Nombre"); self.start_tree.heading("type", text="Tipo"); self.start_tree.heading("loc", text="Ubicación"); self.start_tree.heading("estado", text="Estado"); self.start_tree.heading("cmd", text="Comando")
+        self.start_tree.column("#0", width=200); self.start_tree.column("type", width=70); self.start_tree.column("loc", width=90); self.start_tree.column("estado", width=150); self.start_tree.column("cmd", width=370)
+        self.start_tree.tag_configure("susp", foreground=RED); self.start_tree.tag_configure("orphan", foreground=AMBER); self.start_tree.tag_configure("disabled", foreground=MUT)
+        self.start_tree.pack(fill="both", expand=True, padx=16, pady=(10,4))
+        self._start_data = {}
+        bar = tk.Frame(f, bg=BG); bar.pack(fill="x", padx=16, pady=(0,14))
+        ttk.Button(bar, text="⛔ Desactivar", style="Ghost.TButton", command=lambda: self.start_toggle(False)).pack(side="left")
+        ttk.Button(bar, text="✅ Activar", style="Ghost.TButton", command=lambda: self.start_toggle(True)).pack(side="left", padx=8)
+        ttk.Button(bar, text="🧹 Limpiar obsoletas", style="Teal.TButton", command=lambda: self.start_remove(only_orphans=True)).pack(side="left", padx=8)
+        ttk.Button(bar, text="🗑 Eliminar", style="Ghost.TButton", command=lambda: self.start_remove(only_orphans=False)).pack(side="left")
+        tk.Label(bar, text="Desactivar es reversible (Activar lo devuelve). Requiere administrador.", bg=BG, fg=MUT, font=("Segoe UI",8)).pack(side="left", padx=6)
 
     def refresh_startup(self, data):
         if isinstance(data, Exception): return
         self.start_tree.delete(*self.start_tree.get_children())
+        self._start_data = {}
         for x in data:
-            self.start_tree.insert("", "end", text=x["name"], values=(x["type"], x["loc"], x["cmd"][:120]),
-                                   tags=("susp",) if x.get("susp") else ())
+            base = "⚠ obsoleto (no existe)" if x.get("orphan") else ("sospechoso" if x.get("susp") else "OK")
+            enabled = x.get("enabled", True)
+            estado = base if enabled else (base + " · " if base != "OK" else "") + "desactivado"
+            if enabled:
+                tag = "orphan" if x.get("orphan") else ("susp" if x.get("susp") else "")
+            else:
+                tag = "disabled"
+            iid = self.start_tree.insert("", "end", text=x["name"], values=(x["type"], x["loc"], estado, x["cmd"][:120]),
+                                         tags=(tag,) if tag else ())
+            self._start_data[iid] = x
+
+    def start_toggle(self, enable):
+        if not is_admin(): messagebox.showwarning(APP, "Ejecuta OptiShield como administrador para cambiar el arranque."); return
+        sel = list(self.start_tree.selection())
+        if not sel: messagebox.showinfo(APP, "Selecciona en la lista las entradas a %s." % ("activar" if enable else "desactivar")); return
+        items = [self._start_data[i] for i in sel if i in self._start_data]
+        done = 0; err = 0
+        for x in items:
+            try:
+                if x["type"] == "Run":
+                    set_startup_enabled(x["hive"], x["name"], enable)
+                    log("STARTUP %s Run %s\\%s" % ("enable" if enable else "disable", x["hive"], x["name"]))
+                else:
+                    tn = (x.get("taskpath", "\\") + x.get("taskname", "")).replace("\\\\", "\\")
+                    run(["schtasks", "/Change", "/TN", tn, "/ENABLE" if enable else "/DISABLE"])
+                    log("STARTUP %s task %s" % ("enable" if enable else "disable", tn))
+                done += 1
+            except Exception as e:
+                err += 1; log("STARTUP toggle fail %s: %s" % (x.get("name"), e))
+        messagebox.showinfo(APP, "%s: %d entrada(s)." % ("Activadas" if enable else "Desactivadas", done) + (" %d con error." % err if err else ""))
+        self._runbg(scan_startup, self.refresh_startup)
+
+    def start_remove(self, only_orphans=False):
+        if not is_admin(): messagebox.showwarning(APP, "Ejecuta OptiShield como administrador para eliminar entradas de arranque."); return
+        if only_orphans:
+            targets = [i for i, d in self._start_data.items() if d.get("orphan") and d["type"] == "Run"]
+            if not targets: messagebox.showinfo(APP, "No hay entradas de arranque obsoletas (huérfanas) que limpiar. Pulsa «Escanear» primero."); return
+        else:
+            targets = list(self.start_tree.selection())
+            if not targets: messagebox.showinfo(APP, "Selecciona en la lista las entradas a eliminar."); return
+        items = [self._start_data[i] for i in targets if i in self._start_data]
+        names = [x["name"] for x in items]
+        msg = "Se tratarán %d entrada(s) de arranque:\n\n• %s" % (len(items), "\n• ".join(names[:20]))
+        if len(names) > 20: msg += "\n• …(+%d)" % (len(names) - 20)
+        if any(x["type"] == "Tarea" for x in items): msg += "\n\n(Las tareas programadas se DESACTIVAN, no se borran.)"
+        msg += "\n\nSe registra el valor en el log de OptiShield para poder revertir. ¿Continuar?"
+        if not messagebox.askyesno(APP, msg): return
+        done = 0
+        for x in items:
+            try:
+                if x["type"] == "Run":
+                    log("STARTUP delete Run %s\\%s = %s" % (x["hive"], x["name"], x["cmd"]))
+                    k = winreg.OpenKey(_hkey(x["hive"]), x["regpath"], 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
+                    winreg.DeleteValue(k, x["name"]); winreg.CloseKey(k); done += 1
+                else:
+                    tn = (x.get("taskpath", "\\") + x.get("taskname", "")).replace("\\\\", "\\")
+                    run(["schtasks", "/Change", "/TN", tn, "/DISABLE"]); log("STARTUP disable task %s" % tn); done += 1
+            except Exception as e:
+                log("STARTUP remove fail %s: %s" % (x.get("name"), e))
+        messagebox.showinfo(APP, "Hecho: %d entrada(s) tratada(s).\nReversible: las de «Run» quedan registradas en el log (%s) y las tareas se pueden reactivar en el Programador de tareas." % (done, os.path.join(LOG_DIR, "optishield.log")))
+        self._runbg(scan_startup, self.refresh_startup)
 
     # ---------- Integridad ----------
     def _build_integrity(self):
@@ -1025,18 +1435,25 @@ class OptiShield(tk.Tk):
     # ---------- Apoyo OptiSuite ----------
     def _build_help(self):
         f = self.tab_help
-        box = tk.Frame(f, bg=CARD, highlightbackground=LINE, highlightthickness=1); box.pack(fill="both", expand=True, padx=40, pady=30)
-        tk.Label(box, text="🛡️ OptiShield", bg=CARD, fg=INK, font=("Segoe UI",22,"bold")).pack(pady=(24,2))
+        box = tk.Frame(f, bg=CARD, highlightbackground=LINE, highlightthickness=1); box.pack(fill="both", expand=True, padx=40, pady=24)
+        tk.Label(box, text="🛡️ OptiShield", bg=CARD, fg=INK, font=("Segoe UI",22,"bold")).pack(pady=(20,2))
         tk.Label(box, text="Una herramienta gratuita de OptiSuite para proteger tu privacidad y seguridad.", bg=CARD, fg=MUT, font=("Segoe UI",11)).pack()
-        tk.Label(box, text="Defensiva · reversible · 100%% local (no enviamos tus datos a ningún sitio).", bg=CARD, fg=TEAL2, font=("Segoe UI",10,"bold")).pack(pady=(4,18))
-        info = tk.Frame(box, bg=CARD); info.pack(pady=6)
-        tk.Label(info, text="📱 WhatsApp soporte:  %s" % WHATSAPP, bg=CARD, fg=INK, font=("Segoe UI",11)).pack(anchor="w", pady=3)
-        tk.Label(info, text="✉️  %s" % EMAIL, bg=CARD, fg=INK, font=("Segoe UI",11)).pack(anchor="w", pady=3)
-        tk.Label(info, text="🌐 %s" % WEB, bg=CARD, fg=INK, font=("Segoe UI",11)).pack(anchor="w", pady=3)
-        btns = tk.Frame(box, bg=CARD); btns.pack(pady=20)
-        ttk.Button(btns, text="📱 Abrir WhatsApp", style="Teal.TButton", command=lambda: webbrowser.open(WA_URL)).pack(side="left", padx=6)
+        tk.Label(box, text="Defensiva · reversible · 100%% local (no enviamos tus datos a ningún sitio).", bg=CARD, fg=TEAL2, font=("Segoe UI",10,"bold")).pack(pady=(4,12))
+        tk.Label(box, text="Es gratis y sin anuncios. Si te ayuda, una estrella en GitHub o una aportación\nmantienen OptiSuite vivo. ¡Gracias! 🙌", bg=CARD, fg=INK, font=("Segoe UI",10), justify="center").pack(pady=(0,10))
+        btns = tk.Frame(box, bg=CARD); btns.pack(pady=4)
+        ttk.Button(btns, text="⭐ Estrella en GitHub", style="Teal.TButton", command=lambda: webbrowser.open(GITHUB)).pack(side="left", padx=6)
+        ttk.Button(btns, text="☕ Ko-fi", style="Ghost.TButton", command=lambda: webbrowser.open(KOFI)).pack(side="left", padx=6)
+        ttk.Button(btns, text="♡ Liberapay", style="Ghost.TButton", command=lambda: webbrowser.open(LIBERAPAY)).pack(side="left", padx=6)
         ttk.Button(btns, text="🌐 Visitar OptiSuite", style="Ghost.TButton", command=lambda: webbrowser.open("https://"+WEB)).pack(side="left", padx=6)
-        tk.Label(box, text="© OptiSuite · OptiShield es gratuito. Si te ayuda, compártelo.", bg=CARD, fg=MUT, font=("Segoe UI",9)).pack(side="bottom", pady=16)
+        tk.Label(box, text="O con criptomonedas (toca para copiar):", bg=CARD, fg=MUT, font=("Segoe UI",9)).pack(pady=(16,4))
+        crow = tk.Frame(box, bg=CARD); crow.pack()
+        def copy_btn(label, value):
+            ttk.Button(crow, text="%s:  %s" % (label, value), style="Ghost.TButton",
+                       command=lambda: (self.clipboard_clear(), self.clipboard_append(value), self._status("Copiado al portapapeles: %s" % value))).pack(side="left", padx=6)
+        copy_btn("Binance Pay ID", BINANCE_ID)
+        copy_btn("USDT · BSC (BEP-20)", USDT_BSC)
+        tk.Label(box, text="✉  %s      🌐  %s" % (EMAIL, WEB), bg=CARD, fg=MUT, font=("Segoe UI",10)).pack(pady=(16,2))
+        tk.Label(box, text="© OptiSuite · OptiShield es gratuito. Si te ayuda, compártelo.", bg=CARD, fg=MUT, font=("Segoe UI",9)).pack(side="bottom", pady=14)
 
 def main():
     if not is_admin() and "--noelevate" not in sys.argv:
