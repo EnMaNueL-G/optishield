@@ -7,6 +7,17 @@ blinda la telemetría y la ubicación, audita el arranque y verifica la integrid
 **Principios:** defensiva · reversible · 100 % local (no envía tus datos a ningún servidor) ·
 **nunca** debilita tu seguridad (no toca Windows Defender, Firewall ni UAC — solo informa de su estado).
 
+
+
+## 📂 Código fuente (abierto)
+
+Todo el código es **abierto** y está en este mismo repositorio, por transparencia:
+
+- 👉 **[`fuente/OptiShield.py`](fuente/OptiShield.py)** — el programa **completo** (Python 3 + Tkinter, **sin dependencias externas**).
+- **[`fuente/OptiShield.bat`](fuente/OptiShield.bat)** — lanzador rápido.
+- **[`data/proxyware_db.json`](data/proxyware_db.json)** — base de datos de proxyware, ampliable sin recompilar.
+
+> El **.exe** compilado no se sube al repo (por tamaño); se distribuye en **[Releases](../../releases)**. El código de aquí arriba es exactamente el que se compila.
 ---
 
 ## ✅ Qué hace
