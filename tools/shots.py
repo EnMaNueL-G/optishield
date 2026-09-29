@@ -5,7 +5,8 @@ import os, sys, time, importlib.util
 from PIL import ImageGrab
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("osh", os.path.join(HERE, "..", "OptiShield.py"))
+SRC = next(p for p in (os.path.join(HERE, "..", "OptiShield.py"), os.path.join(HERE, "..", "fuente", "OptiShield.py")) if os.path.exists(p))  # proyecto o repo
+spec = importlib.util.spec_from_file_location("osh", SRC)
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 if "--en" in sys.argv: m.LANG = "en"
 else: m.LANG = "es"

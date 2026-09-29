@@ -5,7 +5,8 @@ Uso: python tools/selftest.py   → imprime SELFTEST_OK si todo pasa."""
 import os, sys, json, socket, tempfile, threading, shutil, importlib.util, winreg
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("osh", os.path.join(HERE, "..", "OptiShield.py"))
+SRC = next(p for p in (os.path.join(HERE, "..", "OptiShield.py"), os.path.join(HERE, "..", "fuente", "OptiShield.py")) if os.path.exists(p))  # proyecto o repo
+spec = importlib.util.spec_from_file_location("osh", SRC)
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 TEST_KEY = "Software\\OptiShieldTest"
@@ -181,7 +182,7 @@ def main():
     check(m.fmt("Tu IP pública: %s", ("1.2.3.4",)) == "Your public IP: 1.2.3.4", "fmt traduce y formatea")
     check(str(m.L("Apagado (a propósito)")) == "Off (on purpose)", "texto perezoso L() traduce")
     m.LANG = "es"
-    check("100%%" not in open(os.path.join(HERE, "..", "OptiShield.py"), encoding="utf-8").read(), "sin '100%%' en el código")
+    check("100%%" not in open(SRC, encoding="utf-8").read(), "sin '100%%' en el código")
 
 def cleanup():
     delete_tree(winreg.HKEY_CURRENT_USER, TEST_KEY)
