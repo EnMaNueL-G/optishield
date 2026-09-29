@@ -1,36 +1,55 @@
 ========================================
-   OptiShield  ·  by OptiSuite
+   OptiShield 1.2.0
+   Enmanuel Gil · OptiSuite
    Escudo de privacidad y seguridad
 ========================================
 
-COMO USARLO (facil):
+COMO USARLO (fácil):
 1) Doble clic en  OptiShield.exe
-2) Pulsa "Si" en el aviso de Windows (administrador) para poder aplicar cambios.
+2) Pulsa "Sí" en el aviso de Windows (administrador) para poder aplicar cambios.
    - Si pulsas "No", igual funciona pero solo en modo LECTURA (analiza pero no cambia).
-3) En la pestana "Panel" pulsa "Analizar todo".
-4) Revisa cada pestana. Marca lo que quieras y aplica. TODO es reversible.
+3) En la pestaña "Panel" pulsa "Analizar todo".
+4) Revisa cada pestaña. Marca lo que quieras y aplica.
+   Antes de cada cambio se guarda una copia, y hay botones para deshacer:
+   - Proxyware:  "Deshacer neutralización"
+   - Arranque:   "Restaurar arranque"
+   - Privacidad: "Revertir seleccionados" (solo lo que aplicó esta versión)
 
 NO NECESITAS INSTALAR NADA. El .exe ya lo lleva todo dentro.
 
-QUE HACE:
-- Detecta y neutraliza proxyware / botnets (tipo NetNut, Badbox).
-- Blinda tu privacidad (telemetria, ubicacion, publicidad...).
+QUÉ HACE:
+- Detecta proxyware (apps que comparten tu conexión a cambio de dinero) y
+  SDK tipo NetNut/Badbox. Los proxies de pago que TÚ usas (Decodo/Smartproxy,
+  IPRoyal, Oxylabs...) y las VPN normales salen como "informativo".
+  Si algo lo instalaste a propósito, pulsa "Permitir".
+- Blinda tu privacidad (telemetría, ubicación, publicidad...).
 - Audita el arranque, la red y la integridad del sistema.
-- NUNCA toca Windows Defender, Firewall ni UAC (solo informa).
-- 100% local: no envia tus datos a ningun sitio.
+- No toca Windows Defender, la configuración del Firewall ni UAC.
+  (Solo añade reglas propias "OptiShield block ..." que puedes quitar.)
+- Si tienes Defender apagado a propósito, marca en el Panel
+  "Defender: lo desactivé a propósito".
+- OptiShield NO sustituye a un antivirus.
+
+PRIVACIDAD:
+- Sin telemetría. Solo consultas DNS normales y, si pulsas el botón,
+  ipify.org (para ver tu IP pública) / AbuseIPDB (se abre en tu navegador).
 
 CARPETAS:
 - OptiShield.exe .......... el programa (esto es lo que abres)
 - data\proxyware_db.json .. lista de proxyware (puedes ampliarla sin recompilar)
-- fuente\ ................. codigo fuente (Python) por transparencia
-- LEEME.md ............... documentacion completa
+- fuente\ ................. código fuente (Python) por transparencia
+- LEEME.md ............... documentación completa
 
 COPIAS DE SEGURIDAD Y REGISTROS:
-   C:\ProgramData\OptiShield\   (backups + logs; desde ahi puedes revertir)
+   C:\ProgramData\OptiShield\   (backups + logs + config.json)
 
 SOPORTE OptiSuite:
    WhatsApp: +56 9 7832 7863
    Email:    support@optisuite.app
    Web:      optisuite.app
 
-OptiShield es GRATIS. Si te ayuda, compartelo.
+DONACIONES (solo Binance):
+   Binance Pay ID:       1165745950
+   USDT (BSC · BEP-20):  0xb6f6731a4ea87f8e1fd6f44f48b5bc4204571f08
+
+OptiShield es GRATIS. Si te ayuda, compártelo.
